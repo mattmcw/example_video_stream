@@ -1,0 +1,15 @@
+{
+  "name": "example_video_stream",
+  "version": "1.0.0",
+  "description": "Example video streaming app. Basics only.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "mattmcw",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1",
+    "ws": "^7.2.0"
+  }
+}

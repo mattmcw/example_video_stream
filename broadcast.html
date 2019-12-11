@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+</head>
+<body>
+    Broadcast
+    <br />
+    <video id="sourcevid" autoplay="true" width="48" height="48"></video>
+    <canvas id="output"></canvas>
+    <div id="log"></div>
+    <script>
+
+    var video = document.getElementById('sourcevid'), 
+        heading = document.getElementsByTagName('h1')[0];
+    if(navigator.getUserMedia) {
+        navigator.getUserMedia({video : true, audio : false}, successCallback, errorCallback);
+     
+        function successCallback( stream ) {
+            //console.log(stream)
+            video.srcObject = stream;
+        };
+     
+        function errorCallback( error ) {
+            heading.textContent = "An error occurred: [CODE " + error.code + "]";
+        };
+    } else { 
+        heading.textContent = "Native web camera streaming is not supported in this browser!";
+    };
+        
+    var back = document.createElement('canvas');
+    var backcontext = back.getContext('2d');
+    
+    var ws;
+
+    if('WebSocket' in window){
+        connect('/broadcast');        
+    } else {
+        log ('web sockets not supported');
+     }
+    
+    function connect(path) {
+        let host = location.hostname;
+        let port = ':8080';
+        let protocol = location.protocol === 'https:' ? 'wss://' : 'ws://'
+        ws = new WebSocket(`${protocol}${host}${port}${path}`);
+        ws.onopen = function () {
+            log('connected');
+        };
+ 
+        ws.onclose = function () {
+            log('socket closed');
+        };
+
+        ws.onerror = function (evt) { 
+            log('<span style="color: red;">ERROR:</span> ' + evt.data); 
+        };
+    };
+      
+    function send (msg) {  
+        if (ws != null) {  
+            if(ws.readyState === 1) {
+               ws.send(msg);
+            }        
+        } else {
+            //log ('not ready yet');
+        }
+    }    
+
+    cw = 240;
+    ch = 320;
+    log('width = ' + ch);
+    back.width = cw;
+    back.height = ch;
+
+    window.requestAnimationFrame(function(){ 
+        draw(video, backcontext, cw, ch) 
+    });
+    
+    function draw(v, bc, w, h) {
+    
+        // First, draw it into the backing canvas
+        bc.drawImage(v, 0, 0, w, h);
+        
+        // Grab the pixel data from the backing canvas
+        var stringData = back.toDataURL();
+        
+        // send it on the wire
+        send(stringData);
+        
+        window.requestAnimationFrame(function(){
+            draw(v, bc, w, h); 
+        });
+    }
+
+    function log(msg){
+        const el = document.getElementById('log');
+        el.innerHTML = msg + "<br/>" + el.innerHTML;
+    }
+    
+    </script>
+</body>
+</html>
